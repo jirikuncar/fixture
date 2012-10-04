@@ -14,7 +14,7 @@ from fixture.dataset import Ref, dataset_registry, DataRow, is_rowlike
 from fixture.exc import UninitializedError, LoadError, UnloadError, StorageMediaNotFound
 import logging
 
-log     = _mklog("fixture.loadable")
+log = _mklog("fixture.loadable")
 treelog = _mklog("fixture.loadable.tree")
 
 class StorageMediumAdapter(object):
@@ -24,19 +24,19 @@ class StorageMediumAdapter(object):
         self.medium = medium
         self.dataset = dataset
         self.transaction = None
-    
+
     def __getattr__(self, name):
         return getattr(self.obj, name)
-    
+
     def __repr__(self):
         return "%s at %s for %s" % (
                 self.__class__.__name__, hex(id(self)), self.medium)
-        
+
     def clear(self, obj):
         """Must clear the stored object.
         """
         raise NotImplementedError
-    
+
     def clearall(self):
         """Must clear all stored objects.
         """
@@ -46,16 +46,16 @@ class StorageMediumAdapter(object):
                 self.clear(obj)
             except Exception, e:
                 etype, val, tb = sys.exc_info()
-                raise UnloadError(etype, val, self.dataset, 
+                raise UnloadError(etype, val, self.dataset,
                                      stored_object=obj), None, tb
-        
+
     def save(self, row, column_vals):
         """Given a DataRow, must save it somehow.
         
         column_vals is an iterable of (column_name, column_value)
         """
         raise NotImplementedError
-        
+
     def visit_loader(self, loader):
         """A chance to visit the LoadableFixture object.
         
@@ -82,11 +82,11 @@ class LoadQueue(ObjRegistry):
         ObjRegistry.__init__(self)
         self.tree = {}
         self.limit = {}
-    
+
     def __repr__(self):
         return "<%s at %s>" % (
                 self.__class__.__name__, hex(id(self)))
-    
+
     def _pushid(self, id, level):
         if id in self.limit:
             # only store the object at its highest level:
@@ -98,27 +98,27 @@ class LoadQueue(ObjRegistry):
         self.tree.setdefault(level, [])
         self.tree[level].append(id)
         self.limit[id] = level
-    
+
     def clear(self):
         """clear internal registry"""
         ObjRegistry.clear(self)
         # this is an attempt to free up refs to database connections:
         self.tree = {}
         self.limit = {}
-    
+
     def register(self, obj, level):
         """register this object as "loaded" at level
         """
         id = ObjRegistry.register(self, obj)
         self._pushid(id, level)
         return id
-    
+
     def referenced(self, obj, level):
         """tell the queue that this object was referenced again at level.
         """
         id = self.id(obj)
         self._pushid(id, level)
-    
+
     def to_unload(self):
         """yields a list of objects in an order suitable for unloading.
         """
@@ -128,14 +128,14 @@ class LoadQueue(ObjRegistry):
         for level in level_nums:
             unload_queue = self.tree[level]
             verbose_obj = []
-            
+
             for id in unload_queue:
                 obj = self.registry[id]
                 verbose_obj.append(obj.__class__.__name__)
                 yield obj
-            
+
             treelog.info("%s. %s", level, verbose_obj)
-            
+
 class LoadableFixture(Fixture):
     """
     knows how to load data into something useful.
@@ -158,7 +158,7 @@ class LoadableFixture(Fixture):
     """
     style = OriginalStyle()
     dataclass = Fixture.dataclass
-    
+
     def __init__(self, style=None, medium=None, **kw):
         Fixture.__init__(self, loader=self, **kw)
         if style:
@@ -166,32 +166,32 @@ class LoadableFixture(Fixture):
         if medium:
             self.Medium = medium
         self.loaded = None
-    
+
     StorageMediumAdapter = StorageMediumAdapter
     Medium = StorageMediumAdapter
     StorageMediaNotFound = StorageMediaNotFound
     LoadQueue = LoadQueue
-    
+
     def attach_storage_medium(self, ds):
         """attach a :class:`StorageMediumAdapter` to DataSet"""
         raise NotImplementedError
-    
+
     def begin(self, unloading=False):
         """begin loading"""
         if not unloading:
             self.loaded = self.LoadQueue()
-    
+
     def commit(self):
         """commit load transaction"""
         raise NotImplementedError
-    
+
     def load(self, data):
         """load data"""
         def loader():
             for ds in data:
                 self.load_dataset(ds)
         self.wrap_in_transaction(loader, unloading=False)
-        
+
     def load_dataset(self, ds, level=1):
         """load this dataset and all its dependent datasets.
         
@@ -202,25 +202,25 @@ class LoadableFixture(Fixture):
         objects unloaded
         
         """
-        is_parent = level==1
-        
+        is_parent = level == 1
+
         levsep = is_parent and "/--------" or "|__.."
         treelog.info(
-            "%s%s%s (%s)", level * '  ', levsep, ds.__class__.__name__, 
+            "%s%s%s (%s)", level * '  ', levsep, ds.__class__.__name__,
                                             (is_parent and "parent" or level))
-        
+
         for ref_ds in ds.meta.references:
             r = ref_ds.shared_instance(default_refclass=self.dataclass)
-            new_level = level+1
-            self.load_dataset(r,  level=new_level)
-        
+            new_level = level + 1
+            self.load_dataset(r, level=new_level)
+
         self.attach_storage_medium(ds)
-        
+
         if ds in self.loaded:
             # keep track of its order but don't actually load it...
             self.loaded.referenced(ds, level)
             return
-        
+
         log.info("LOADING rows in %s", ds)
         ds.meta.storage_medium.visit_loader(self)
         registered = False
@@ -239,12 +239,12 @@ class LoadableFixture(Fixture):
                 if not registered:
                     self.loaded.register(ds, level)
                     registered = True
-                
+
             except Exception, e:
                 etype, val, tb = sys.exc_info()
                 raise LoadError(etype, val, ds, key=key, row=row), None, tb
-    
-    def resolve_row_references(self, current_dataset, row):        
+
+    def resolve_row_references(self, current_dataset, row):
         """resolve this DataRow object's referenced values.
         """
         def resolved_rowlike(rowlike):
@@ -253,7 +253,7 @@ class LoadableFixture(Fixture):
                 return DeferredStoredObject(rowlike._dataset, key)
             loaded_ds = self.loaded[rowlike._dataset]
             return loaded_ds.meta._stored_objects.get_object(key)
-        def resolve_stored_object(candidate):            
+        def resolve_stored_object(candidate):
             if is_rowlike(candidate):
                 return resolved_rowlike(candidate)
             else:
@@ -261,7 +261,7 @@ class LoadableFixture(Fixture):
                 # there is a reciprocal foreign key (i.e. organization has a 
                 # parent organization)
                 return candidate
-                
+
         for name in row.columns():
             val = getattr(row, name)
             if type(val) in (types.ListType, types.TupleType):
@@ -276,15 +276,15 @@ class LoadableFixture(Fixture):
                 # now the ref will return the attribute from a stored object 
                 # when __get__ is invoked
                 ref.dataset_obj = self.loaded[ref.dataset_class]
-    
+
     def rollback(self):
         """rollback load transaction"""
         raise NotImplementedError
-    
+
     def then_finally(self, unloading=False):
         """called in a finally block after load transaction has begun"""
         pass
-    
+
     def unload(self):
         """unload data"""
         if self.loaded is None:
@@ -297,11 +297,11 @@ class LoadableFixture(Fixture):
             self.loaded.clear()
             dataset_registry.clear()
         self.wrap_in_transaction(unloader, unloading=True)
-    
+
     def unload_dataset(self, dataset):
         """unload data stored for this dataset"""
         dataset.meta.storage_medium.clearall()
-    
+
     def wrap_in_transaction(self, routine, unloading=False):
         """call routine in a load transaction"""
         self.begin(unloading=unloading)
@@ -326,7 +326,7 @@ class EnvLoadableFixture(LoadableFixture):
     def __init__(self, env=None, **kw):
         LoadableFixture.__init__(self, **kw)
         self.env = env
-    
+
     def attach_storage_medium(self, ds):
         """Lookup a storage medium in the ``env`` and attach it to a DataSet.
         
@@ -347,42 +347,42 @@ class EnvLoadableFixture(LoadableFixture):
         if ds.meta.storage_medium is not None:
             # already attached...
             return
-        
+
         storable = ds.meta.storable
-        
-        if not storable:
+
+        if storable is None:
             if not ds.meta.storable_name:
                 ds.meta.storable_name = self.style.guess_storable_name(
                                                         ds.__class__.__name__)
-        
+
             if hasattr(self.env, 'get'):
                 storable = self.env.get(ds.meta.storable_name, None)
-            if not storable:
+            if storable is None:
                 if hasattr(self.env, ds.meta.storable_name):
                     try:
                         storable = getattr(self.env, ds.meta.storable_name)
                     except AttributeError:
                         pass
-        
-            if not storable:
+
+            if storable is None:
                 repr_env = repr(type(self.env))
                 if hasattr(self.env, '__module__'):
                     repr_env = "%s from '%s'" % (repr_env, self.env.__module__)
-                
+
                 raise self.StorageMediaNotFound(
                     "could not find %s '%s' for "
                     "dataset %s in self.env (%s)" % (
                         self.Medium, ds.meta.storable_name, ds, repr_env))
-                        
+
         if storable == ds.__class__:
             raise ValueError(
                 "cannot use %s %s as a storable object of itself! "
                 "(perhaps your style object was not configured right?)" % (
                                         ds.__class__.__name__, ds.__class__))
         ds.meta.storage_medium = self.Medium(storable, ds)
-        
+
     def resolve_stored_object(self, column_val):
-        if type(column_val)==DeferredStoredObject:
+        if type(column_val) == DeferredStoredObject:
             return column_val.get_stored_object_from_loader(self)
         else:
             return column_val
@@ -398,16 +398,16 @@ class DBLoadableFixture(EnvLoadableFixture):
         EnvLoadableFixture.__init__(self, **kw)
         self.dsn = dsn
         self.transaction = None
-    
+
     def begin(self, unloading=False):
         """begin loading data"""
         EnvLoadableFixture.begin(self, unloading=unloading)
         self.transaction = self.create_transaction()
-    
+
     def commit(self):
         """call transaction.commit() on transaction returned by :meth:`DBLoadableFixture.create_transaction`"""
         self.transaction.commit()
-    
+
     def create_transaction(self):
         """must return a transaction object that implements commit() and rollback()
         
@@ -415,7 +415,7 @@ class DBLoadableFixture(EnvLoadableFixture):
         
         """
         raise NotImplementedError
-    
+
     def rollback(self):
         """call transaction.rollback() on transaction returned by :meth:`DBLoadableFixture.create_transaction`"""
         self.transaction.rollback()
@@ -447,7 +447,7 @@ class DeferredStoredObject(object):
     def __init__(self, dataset, key):
         self.dataset = dataset
         self.key = key
-    
+
     def get_stored_object_from_loader(self, loader):
         loaded_ds = loader.loaded[self.dataset]
         return loaded_ds.meta._stored_objects.get_object(self.key)
@@ -455,4 +455,4 @@ class DeferredStoredObject(object):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-    
+
