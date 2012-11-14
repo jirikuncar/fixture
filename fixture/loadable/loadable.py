@@ -244,6 +244,8 @@ class LoadableFixture(Fixture):
                 etype, val, tb = sys.exc_info()
                 raise LoadError(etype, val, ds, key=key, row=row), None, tb
 
+        ds.post_load()
+
     def resolve_row_references(self, current_dataset, row):
         """resolve this DataRow object's referenced values.
         """

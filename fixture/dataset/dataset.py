@@ -430,7 +430,7 @@ class DataSet(DataContainer):
     
     """
     __metaclass__ = DataType
-    _reserved_attr = DataContainer._reserved_attr + ('data', 'shared_instance')
+    _reserved_attr = DataContainer._reserved_attr + ('data', 'shared_instance', 'post_load')
     ref = None
     Meta = DataSetMeta
 
@@ -586,6 +586,9 @@ class DataSet(DataContainer):
             dataset = cls(**kw)
             dataset_registry.register(dataset)
         return dataset
+
+    def post_load(self):
+        """Hook point to run after all rows of this dataset are loaded."""
 
 class DataSetContainer(object):
     """
