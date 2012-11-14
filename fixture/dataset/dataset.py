@@ -20,24 +20,24 @@ class DataContainer(object):
     class Meta:
         data = None
         keys = None
-        
+
     def __init__(self, data=None, keys=None):
         lazy_meta(self)
-        if not data: 
+        if not data:
             data = {}
         self.meta.data = data
-        if not keys: 
+        if not keys:
             keys = []
         self.meta.keys = keys
-    
+
     def __contains__(self, name):
         """True if name is a known key"""
         return name in self.meta.keys
-    
+
     def __getitem__(self, key):
         """self['foo'] returns self.meta.data['foo']"""
         return self.meta.data[key]
-        
+
     def __getattribute__(self, name):
         """Attributes are always fetched first from self.meta.data[name] if possible"""
         # it is necessary to completely override __getattr__
@@ -48,7 +48,7 @@ class DataContainer(object):
             return self.meta.data[name]
         except KeyError:
             raise AttributeError("%s has no attribute '%s'" % (self, name))
-    
+
     def __repr__(self):
         if hasattr(self, 'meta'):
             keys = self.meta.keys
@@ -57,11 +57,11 @@ class DataContainer(object):
         return "<%s at %s with keys %s>" % (
                 self.__class__.__name__,
                 hex(id(self)), keys)
-    
+
     def get(self, k, default=None):
         """self.meta.get(k, default)"""
         return self.meta.data.get(k, default)
-    
+
     def _setdata(self, key, value):
         """Adds value to self.meta.data[key]"""
         if key not in self.meta.data:
@@ -73,7 +73,7 @@ class RefValue(object):
     def __init__(self, ref, attr_name):
         self.attr_name = attr_name
         self.ref = ref
-    
+
     def __repr__(self):
         return "<%s.%s for %s.%s.%s (%s)>" % (
             Ref.__name__, self.__class__.__name__,
@@ -126,27 +126,27 @@ class Ref(object):
     
     """
     Value = RefValue
-            
+
     def __init__(self, dataset_class, row):
         self.dataset_class = dataset_class
         self.dataset_obj = None
         self.row = row
         # i.e. the name of the row class...
         self.key = self.row.__name__
-    
+
     def __call__(self, ref_name):
         """Return a :class:`RefValue` instance for ref_name"""
         return self.Value(self, ref_name)
-    
+
     def __repr__(self):
         return "<%s to %s.%s at %s>" % (
-            self.__class__.__name__, self.dataset_class.__name__, 
+            self.__class__.__name__, self.dataset_class.__name__,
             self.row.__name__, hex(id(self)))
 
 def is_row_class(attr):
     attr_type = type(attr)
-    return ((attr_type==types.ClassType or attr_type==type) and 
-                attr.__name__ != 'Meta' and 
+    return ((attr_type == types.ClassType or attr_type == type) and
+                attr.__name__ != 'Meta' and
                 not issubclass(attr, DataContainer.Meta))
 
 class DataType(type):
@@ -154,24 +154,24 @@ class DataType(type):
     Meta class for creating :class:`DataSet` classes.
     """
     default_primary_key = ['id']
-                    
+
     def __init__(cls, name, bases, cls_attr):
         super(DataType, cls).__init__(name, bases, dict)
-        
+
         if 'Meta' in cls_attr and hasattr(cls_attr['Meta'], 'primary_key'):
             cls_attr['_primary_key'] = cls_attr['Meta'].primary_key
         else:
             cls_attr['_primary_key'] = cls.default_primary_key
-        
+
         # just like dir(), we should do this in alpha order :
         ## NOTE: dropping support for <2.4 here...
         for name in sorted(cls_attr.keys()):
             attr = cls_attr[name]
             if is_row_class(attr):
                 cls.decorate_row(attr, name, bases, cls_attr)
-                
+
         del cls_attr['_primary_key']
-    
+
     def decorate_row(cls, row, name, bases, cls_attr):
         """Each row (an inner class) assigned to a :class:`DataSet` will be customized after it is created.
         
@@ -212,10 +212,10 @@ class DataType(type):
         """
         # store a backref to the container dataset
         row._dataset = cls
-        
+
         # bind a ref method
         row.ref = Ref(cls, row)
-        
+
         # fix inherited primary keys
         names_to_uninherit = []
         for name in dir(row):
@@ -239,14 +239,14 @@ class DataType(type):
         for base_c, base_pos in bases_to_replace:
             # this may not work if the row's base was a new-style class
             new_base = types.ClassType(
-                            base_c.__name__, base_c.__bases__, 
+                            base_c.__name__, base_c.__bases__,
                             dict([(k, getattr(base_c, k)) for k in dir(base_c) \
                                     if not k.startswith('_') and \
                                     k not in names_to_uninherit]))
             new_bases[base_pos] = new_base
         if new_bases:
             row.__bases__ = tuple(new_bases)
-            
+
 
 def is_rowlike(candidate):
     """returns True if candidate is *like* a DataRow.
@@ -264,16 +264,16 @@ class DataRow(object):
     a DataSet row, values accessible by attibute or key.
     """
     _reserved_attr = ('columns',)
-    
+
     def __init__(self, dataset):
         object.__setattr__(self, '_dataset', dataset)
         # i.e. the name of the row class...
         object.__setattr__(self, '_key', self.__class__.__name__)
-    
+
     def __getitem__(self, item):
         """self['foo'] works the same as self.foo"""
         return getattr(self, item)
-    
+
     def __getattr__(self, name):
         """Undefined attributes are fetched from the actual data object stored for this row."""
         # an undefined data attribute was referenced,
@@ -282,10 +282,10 @@ class DataRow(object):
         # created only after load
         if name.startswith('_'):
             return object.__getattribute__(self, name)
-        
+
         obj = self._dataset.meta._stored_objects.get_object(self._key)
         return getattr(obj, name)
-    
+
     @classmethod
     def columns(self):
         """Classmethod that yields all attribute names (except reserved attributes) 
@@ -302,7 +302,7 @@ class DataSetStore(list):
         list.__init__(self)
         self.dataset = dataset
         self._ds_key_map = {}
-    
+
     def get_object(self, key):
         """returns the object at this key.
         
@@ -322,10 +322,10 @@ class DataSetStore(list):
             etype, val, tb = sys.exc_info()
             raise etype("row '%s' hasn't been loaded for %s (loaded: %s)" % (
                                         key, self.dataset, self)), None, tb
-        
+
     def store(self, key, obj):
         self.append(obj)
-        pos = len(self)-1
+        pos = len(self) - 1
         self._ds_key_map[key] = pos
 
 dataset_registry = ObjRegistry()
@@ -433,10 +433,10 @@ class DataSet(DataContainer):
     _reserved_attr = DataContainer._reserved_attr + ('data', 'shared_instance')
     ref = None
     Meta = DataSetMeta
-    
+
     def __init__(self, default_refclass=None, default_meta=None):
         DataContainer.__init__(self)
-        
+
         # we want the convenience of not having to 
         # inherit DataSet.Meta.  hmmm ...
         if not default_meta:
@@ -446,7 +446,7 @@ class DataSet(DataContainer):
             for name in dir(defaults):
                 if not hasattr(self.meta, name):
                     setattr(self.meta, name, getattr(defaults, name))
-        
+
         self.meta._stored_objects = DataSetStore(self)
         # dereference from class ...        
         try:
@@ -454,10 +454,10 @@ class DataSet(DataContainer):
         except AttributeError:
             cl_attr = []
         setattr(self.meta, 'references', [c for c in cl_attr])
-        
+
         if not default_refclass:
             default_refclass = SuperSet
-        
+
         def mkref():
             clean_refs = []
             for ds in iter(self.meta.references):
@@ -466,37 +466,37 @@ class DataSet(DataContainer):
                     continue
                 clean_refs.append(ds)
             self.meta.references = clean_refs
-            
+
             return default_refclass(*[
-                ds.shared_instance(default_refclass=default_refclass) 
+                ds.shared_instance(default_refclass=default_refclass)
                     for ds in iter(self.meta.references)
             ])
-        
+
         # data def style classes, so they have refs before data is walked
         if len(self.meta.references) > 0:
             self.ref = mkref()
-            
+
         for key, data in self.data():
             if key in self:
                 raise ValueError(
                     "data() cannot redeclare key '%s' "
                     "(this is already an attribute)" % key)
-                    
+
             if isinstance(data, dict):
                 # make a new class object for the row data
                 # so that a loaded dataset can instantiate this...
                 data = type(key, (self.meta.row,), data)
             self._setdata(key, data)
-            
+
         if not self.ref:
             # type style classes, since refs were discovered above
             self.ref = mkref()
-    
+
     def __iter__(self):
         """yields keys of self.meta"""
         for key in self.meta.keys:
             yield (key, getattr(self, key))
-    
+
     def data(self):
         """returns iterable key/dict pairs.
         
@@ -524,33 +524,33 @@ class DataSet(DataContainer):
             
         """
         if self.meta._built:
-            for k,v in self:
-                yield (k,v)
-                
+            for k, v in self:
+                yield (k, v)
+
         def public_dir(obj):
             for name in dir(obj):
                 if name.startswith("_"):
                     continue
                 yield name
-        
+
         def add_ref_from_rowlike(rowlike):
             if rowlike._dataset not in self.meta.references:
                 self.meta.references.append(rowlike._dataset)
-                    
+
         empty = True
         for name in public_dir(self.__class__):
             val = getattr(self.__class__, name)
             if not is_row_class(val):
                 continue
-            
+
             empty = False
             key = name
             row_class = val
             row = {}
-            
+
             for col_name in public_dir(row_class):
                 col_val = getattr(row_class, col_name)
-                
+
                 if isinstance(col_val, Ref):
                     # the .ref attribute
                     continue
@@ -567,14 +567,14 @@ class DataSet(DataContainer):
                     if ref.dataset_class not in self.meta.references:
                         # store the reference:
                         self.meta.references.append(ref.dataset_class)
-                    
+
                 row[col_name] = col_val
             yield (key, row)
-            
+
         if empty:
             raise ValueError("cannot create an empty DataSet")
         self.meta._built = True
-    
+
     @classmethod
     def shared_instance(cls, **kw):
         """Returns or creates the singleton instance for this :class:`DataSet` class"""
@@ -596,22 +596,22 @@ class DataSetContainer(object):
     class Meta:
         datasets = None
         dataset_keys = None
-        
+
     def __init__(self):
         lazy_meta(self)
         self.meta.datasets = {}
         self.meta.dataset_keys = []
         self.meta._cache = ObjRegistry()
-    
+
     def __iter__(self):
         """yields dataset keys"""
         for k in self.meta.dataset_keys:
             yield self.meta.datasets[k]
-        
+
     def _dataset_to_key(self, dataset):
         """Returns a key for dataset (the name of the DataSet subclass)"""
         return dataset.__class__.__name__
-        
+
     def _setdataset(self, dataset, key=None, isref=False):
         """sets a dataset in this container.
         
@@ -621,15 +621,15 @@ class DataSetContainer(object):
         # due to reference resolution we might get colliding data sets...
         if dataset in self.meta._cache:
             return False
-            
+
         if key is None:
             key = self._dataset_to_key(dataset)
         if not isref:
             # refs are not yielded
             self.meta.dataset_keys.append(key)
-            
+
         self.meta.datasets[key] = dataset
-        
+
         self.meta._cache.register(dataset)
         return True
 
@@ -663,18 +663,18 @@ class SuperSet(DataContainer, DataSetContainer):
     """
     class Meta(DataContainer.Meta, DataSetContainer.Meta):
         pass
-        
+
     def __init__(self, *datasets):
         DataContainer.__init__(self)
         DataSetContainer.__init__(self)
         self._store_datasets(datasets)
-    
+
     def _store_datasets(self, datasets):
         for d in datasets:
             k = self._dataset_to_key(d)
             self._setdata(k, d)
             self._setdataset(d, key=k)
-            
+
             for ref_d in d.ref:
                 k = self._dataset_to_key(ref_d)
                 self._setdata(k, ref_d)
@@ -715,29 +715,29 @@ class MergedSuperSet(SuperSet):
         lazy_meta(self)
         self.meta.keys_to_datasets = {}
         SuperSet.__init__(self, *datasets)
-    
+
     def _setdataset(self, dataset, key=None, isref=False):
         if SuperSet._setdataset(self, dataset, key=key, isref=isref):
-            for k,row in dataset:
+            for k, row in dataset:
                 if k in self.meta.keys_to_datasets:
                     raise ValueError(
                         "cannot add key '%s' for %s because it was "
                         "already added by %s" % (
                             k, dataset, self.meta.keys_to_datasets[k]))
-                
+
                 # need an instance here, if it's a class...
                 if not isinstance(row, DataRow):
                     row = row(dataset)
                 self._setdata(k, row)
-                self.meta.keys_to_datasets[k] = dataset 
-    
+                self.meta.keys_to_datasets[k] = dataset
+
     def _store_datasets(self, datasets):
         for dataset in datasets:
             self._setdataset(dataset)
-            
+
             for d in dataset.ref:
                 self._setdataset(d, isref=True)
-                
+
 
 def lazy_meta(obj):
     if not hasattr(obj, 'meta'):
@@ -746,4 +746,4 @@ def lazy_meta(obj):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-    
+
