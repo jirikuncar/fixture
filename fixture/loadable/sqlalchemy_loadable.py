@@ -324,7 +324,10 @@ class TableMedium(DBLoadableFixture.StorageMediumAdapter):
             c = self.conn.execute(stmt, params)
         else:
             c = stmt.execute(params)
-        primary_key = c.last_inserted_ids()
+        if hasattr(c, "primary_key"):
+            primary_key = c.primary_key
+        else:
+            primary_key = c.last_inserted_ids()
         if primary_key is None:
             raise NotImplementedError(
                     "what can we do with a None primary key?")
