@@ -6,33 +6,46 @@ See :ref:`Using the fixture command <using-fixture-command>` for examples.
 
 """
 
-import inspect
-import optparse
 import os
-import pkg_resources
 import six
 import sys
+import inspect
+import optparse
+import pprint
+import pkg_resources
 from warnings import warn
 from fixture.command.generate.template import templates, is_template
 handler_registry = []
 
+
 class NoData(LookupError):
     """no data was returned by a query"""
     pass
+
+
 class HandlerException(Exception):
     pass
+
+
 class UnrecognizedObject(HandlerException):
     pass
+
+
 class UnsupportedHandler(HandlerException):
     pass
+
+
 class MisconfiguredHandler(HandlerException):
     pass
+
 
 def register_handler(handler):
     handler_registry.append(handler)
 
+
 def clear_handlers():
     handler_registry[:] = []
+
 
 class FixtureCache(object):
     """cache of Fixture objects and their data sets to be generatred.
@@ -49,10 +62,10 @@ class FixtureCache(object):
         self.registry = {}
         self.order_of_appearence = []
 
-    def add(self, set):
-        fxtid = set.obj_id()
+    def add(self, result_set):
+        fxtid = result_set.obj_id()
         self.push_fxtid(fxtid)
-        if not self.registry.has_key(fxtid):
+        if fxtid not in self.registry:
             self.registry[fxtid] = {}
 
         # we want to add a new set but
@@ -60,7 +73,7 @@ class FixtureCache(object):
         # this merge is done assuming that sets of
         # the same id will always be identical
         # (which should be true for db fixtures)
-        self.registry[fxtid][set.set_id()] = set
+        self.registry[fxtid][result_set.set_id()] = result_set
 
     def push_fxtid(self, fxtid):
         o = self.order_of_appearence
@@ -70,6 +83,7 @@ class FixtureCache(object):
         except ValueError:
             pass
         o.append(fxtid)
+
 
 class DataSetGenerator(object):
     """produces a callable object that can generate DataSet code.
@@ -95,6 +109,9 @@ class DataSetGenerator(object):
                 recognizes_obj = h.recognizes(object_path, obj=obj)
             except UnsupportedHandler as e:
                 warn("%s is unsupported (%s)" % (h, e))
+                continue
+            except Exception, e:
+                warn("Unknown error (%s)" % (e, ))
                 continue
             if recognizes_obj:
                 handler = h(object_path, self.options,
@@ -144,7 +161,7 @@ class DataSetGenerator(object):
             tpl['fxt_class'] = self.handler.mk_class_name(kls)
 
             val_dict = self.cache.registry[kls]
-            for k,fset in val_dict.items():
+            for k, fset in val_dict.items():
                 key = fset.mk_key()
                 data = self.handler.resolve_data_dict(datadef, fset)
                 tpl['data'].append((key, self.template.dict(data)))
@@ -172,9 +189,10 @@ class DataSetGenerator(object):
         self.handler.begin()
         try:
             self.handler.findall(self.options.where)
+
             def cache_set(s):
                 self.cache.add(s)
-                for (k,v) in s.data_dict.items():
+                for (k, v) in s.data_dict.items():
                     if isinstance(v, FixtureSet):
                         f_set = v
                         cache_set(f_set)
@@ -194,6 +212,7 @@ class DataSetGenerator(object):
 
         return self.code()
 
+
 class FixtureSet(object):
     """a key, data_dict pair for a set in a fixture.
 
@@ -205,9 +224,9 @@ class FixtureSet(object):
         self.data_dict = {}
 
     def __repr__(self):
-        return "<%s at %s for data %s>" % (
-                self.__class__.__name__, hex(id(self)),
-                pprint.pformat(self.data_dict))
+        return "<%s at %s for data %s>" % (self.__class__.__name__,
+                                           hex(id(self)),
+                                           pprint.pformat(self.data_dict))
 
     def attr_to_db_col(self, col):
         """returns a database column name for a fixture set's attribute.
@@ -252,10 +271,12 @@ class FixtureSet(object):
         """
         raise NotImplementedError
 
+
 class HandlerType(type):
     def __str__(self):
         # split camel class name into something readable?
         return self.__name__
+
 
 class DataHandler(six.with_metaclass(HandlerType, object)):
     """handles an object that can provide fixture data.
@@ -316,15 +337,15 @@ class DataHandler(six.with_metaclass(HandlerType, object)):
         # want to do is turn all foreign key values into
         # code strings
 
-        for k,v in fset.data_dict.items():
+        for k, v in fset.data_dict.items():
             if isinstance(v, FixtureSet):
                 # then it's a foreign key link
                 linked_fset = v
                 self.add_fixture_set(linked_fset)
 
                 fxt_class = self.mk_class_name(linked_fset)
-                datadef.add_reference(  fxt_class,
-                                        fxt_var = linked_fset.mk_var_name() )
+                datadef.add_reference(fxt_class,
+                                      fxt_var=linked_fset.mk_var_name())
                 fset.data_dict[k] = datadef.fset_to_attr(linked_fset, fxt_class)
 
         return fset.data_dict
@@ -336,6 +357,7 @@ class DataHandler(six.with_metaclass(HandlerType, object)):
     def sets(self):
         """yield a FixtureSet for each set in obj."""
         raise NotImplementedError
+
 
 def dataset_generator(argv):
     """%prog [options] OBJECT_PATH
@@ -350,56 +372,47 @@ def dataset_generator(argv):
         directory_app.models.Employee
 
     """
-    parser = optparse.OptionParser(
-        usage=(inspect.getdoc(dataset_generator)))
+    parser = optparse.OptionParser(usage=(inspect.getdoc(dataset_generator)))
     parser.add_option('--dsn',
-                help="Sets db connection for a handler that uses a db")
-    parser.add_option('-w','--where',
-                help="SQL where clause, i.e. \"id = 1705\" ")
+                      help="Sets db connection for a handler that uses a db")
+    parser.add_option('-w', '--where',
+                      help="SQL where clause, i.e. \"id = 1705\" ")
 
     d = "Data"
     parser.add_option('--suffix',
-        help = (
-            "String suffix for all dataset class names "
-            "(default: %s; i.e. an Employee object becomes EmployeeData)" % d),
-        default=d)
+                      help=("String suffix for all dataset class names "
+                            "(default: %s; i.e. an Employee object becomes EmployeeData)" % d),
+                      default=d)
     parser.add_option('--prefix',
-        help="String prefix for all dataset class names (default: None)",
-        default="")
+                      help="String prefix for all dataset class names (default: None)",
+                      default="")
 
-    parser.add_option('--env',
-        help = (
-            "Module path to use as an environment for finding objects.  "
-            "declaring multiple --env values will be recognized"),
-        action='append', default=[])
+    parser.add_option('--env', action='append', default=[],
+                      help=("Module path to use as an environment for finding objects.  "
+                            "declaring multiple --env values will be recognized"))
 
-    parser.add_option('--require-egg',
-        dest='required_eggs',
-        help = (
-            "A requirement string to enable importing from a module that was "
-            "installed in multi-version mode by setuptools.  I.E. foo==1.0.  "
-            "You can repeat this option as many times as necessary."),
-        action='append', default=[])
+    parser.add_option('--require-egg', dest='required_eggs', action='append', default=[],
+                      help=("A requirement string to enable importing from a module that was "
+                            "installed in multi-version mode by setuptools.  I.E. foo==1.0.  "
+                            "You can repeat this option as many times as necessary."))
 
     default_tpl = templates.default()
     parser.add_option('--template',
-        help="Template to use; choices: %s, default: %s" % (
-                        tuple([t for t in templates]), default_tpl),
-        default=default_tpl)
+                      help="Template to use; choices: %s, default: %s" % (tuple([t for t in templates]), default_tpl),
+                      default=default_tpl)
 
     parser.add_option("-c", "--connect",
-        metavar="FUNCTION_PATH", action="append", default=[],
-        help=(  "Path to a function that performs a custom connection, accepting a single "
-                "parameter, DSN.  I.E. 'some_module.submod:connect' will be called as connect(DSN).  "
-                "Called *after* OBJECT_PATH is imported but *before* any queries are made. "
-                "This option can be declared multiple times."))
+                      metavar="FUNCTION_PATH",
+                      help=("Path to a function that performs a custom connection, accepting a single"
+                            "parameter, DSN.  I.E. 'some_module.submod:connect' will be called as connect(DSN).  "
+                            "Called *after* OBJECT_PATH is imported but *before* any queries are made."))
     parser.add_option("-s", "--setup",
-        metavar="FUNCTION_PATH", action="append", default=[],
-        help=(  "Path to a function that sets up data objects, accepting no parameters. "
-                "I.E. 'some_module.submod:setup_all' will be called as setup_all().  "
-                "Called *after* OBJECT_PATH is imported but *before* any queries are made "
-                "and *before* connect(DSN) is called. "
-                "This option can be declared multiple times."))
+                      metavar="FUNCTION_PATH", action="append", default=[],
+                      help=("Path to a function that sets up data objects, accepting no parameters. "
+                            "I.E. 'some_module.submod:setup_all' will be called as setup_all().  "
+                            "Called *after* OBJECT_PATH is imported but *before* any queries are made "
+                            "and *before* connect(DSN) is called. "
+                            "This option can be declared multiple times."))
 
     # parser.add_option('--show_query_only', action='store_true',
     #             help="prints out query generated by sqlobject and exits")
@@ -419,10 +432,10 @@ def dataset_generator(argv):
     curr_opt, curr_path, setup_callbacks = None, None, None
     try:
         curr_opt = '--connect'
-        for path in options.connect:
-            curr_path = path
-            connect = resolve_function_path(path)
-            connect(options.dsn)
+        if options.connect:
+            curr_path = options.connect
+            connect = resolve_function_path(options.connect)
+            setattr(options, 'connection', connect(options.dsn))
         curr_opt = '--setup'
         setup_callbacks = []
         for path in options.setup:
@@ -433,17 +446,19 @@ def dataset_generator(argv):
         parser.error("%s=%s %s: %s" % (curr_opt, curr_path, etype.__name__, val))
 
     try:
-        return get_object_data(object_path, options, setup_callbacks=setup_callbacks)
+        return get_object_data(object_path, options,
+                               setup_callbacks=setup_callbacks)
     except (MisconfiguredHandler, NoData, UnrecognizedObject):
         etype, val, tb = sys.exc_info()
         parser.error("%s: %s" % (etype.__name__, val))
+
 
 def resolve_function_path(path):
     if ':' in path:
         mod, obj = path.split(':')
     else:
         mod, obj = path, None
-    fn = __import__(mod, globals(),globals(), [obj])
+    fn = __import__(mod, globals(), globals(), [obj])
     if obj is not None:
         parts = obj.split('.')
         last_attr = fn
@@ -453,6 +468,7 @@ def resolve_function_path(path):
             last_attr = getattr(last_attr, p)
         fn = last_attr
     return fn
+
 
 def get_object_data(object_path, options, setup_callbacks=None):
     """query object at object_path and return generated code
@@ -468,6 +484,7 @@ def get_object_data(object_path, options, setup_callbacks=None):
         generate.template = templates.find(options.template)
     return generate(object_path, setup_callbacks=setup_callbacks)
 
+
 def main(argv=sys.argv[1:]):
     if '__testmod__' in argv:
         # sorry this is all I can think of at the moment :(
@@ -479,7 +496,7 @@ def main(argv=sys.argv[1:]):
         finally:
             teardown_examples()
         return
-    print( dataset_generator(argv))
+    print(dataset_generator(argv))
     return 0
 
 if __name__ == '__main__':

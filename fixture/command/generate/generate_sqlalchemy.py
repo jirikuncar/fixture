@@ -3,12 +3,15 @@ import six
 import sys
 import inspect
 from fixture.command.generate import (
-        DataHandler, register_handler, FixtureSet, NoData, UnsupportedHandler)
+        DataHandler, register_handler, FixtureSet, NoData, UnsupportedHandler,
+        MisconfiguredHandler)
 from fixture import SQLAlchemyFixture
+
 try:
     import sqlalchemy
 except ImportError:
     sqlalchemy = False
+
 
 class TableEnv(object):
     """a shared environment of sqlalchemy Table instances.
@@ -28,8 +31,8 @@ class TableEnv(object):
                         if "." in modpath:
                             cut = modpath.rfind(".")
                             names = [modpath[cut+1:]]
-                            parent = __import__(
-                                    modpath[0:cut], globals(), locals(), names)
+                            parent = __import__(modpath[0:cut], globals(),
+                                                locals(), names)
                             module = getattr(parent, names[0])
                         else:
                             module = __import__(modpath)
@@ -52,11 +55,10 @@ class TableEnv(object):
             return self.tablemap[table]
         except KeyError:
             etype, val, tb = sys.exc_info()
-            raise LookupError(
-                "Could not locate original declaration of Table %s "
-                "(looked in: %s)  You might need to add "
-                "--env='path.to.module'?" % (
-                        table, ", ".join([repr(p) for p in self.objects])))
+            raise LookupError("Could not locate original declaration of Table %s "
+                              "(looked in: %s)  You might need to add "
+                              "--env='path.to.module'?" % (table, ", ".join([repr(p) for p in self.objects])),
+                              tb)
 
     def _find_objects(self, obj, module):
         from sqlalchemy.schema import Table
@@ -69,6 +71,8 @@ class TableEnv(object):
         else:
             getitems = obj.items
         for name, o in getitems():
+            # if we get declarative base then we look for table object.
+            o = getattr(o, '__table__', o)
             if isinstance(o, Table):
                 self.add_table(o, name=name, module=module)
             if self._is_sa_mapped(o):
@@ -92,6 +96,7 @@ class TableEnv(object):
     def get_real_table(self, table):
         return getattr(self[table]['module'], self[table]['name'])
 
+
 class SQLAlchemyHandler(DataHandler):
     """handles genration of fixture code from a sqlalchemy data source."""
 
@@ -101,6 +106,7 @@ class SQLAlchemyHandler(DataHandler):
         """adapts a sqlalchemy record set object for use in a
         SQLAlchemyFixtureSet."""
         columns = None
+
         def __init__(self, obj):
             raise NotImplementedError("not a concrete implementation")
 
@@ -112,12 +118,12 @@ class SQLAlchemyHandler(DataHandler):
         from sqlalchemy.orm import sessionmaker, scoped_session
 
         self.engine = None
-        self.connection = connection
+        self.connection = connection or options.connection
+
         super(SQLAlchemyHandler, self).__init__(object_path, options, **kw)
         if not self.connection:
             if not self.options.dsn:
-                raise MisconfiguredHandler(
-                        "--dsn option is required by %s" % self.__class__)
+                raise MisconfiguredHandler("--dsn option is required by %s" % self.__class__)
 
             self.engine = create_engine(self.options.dsn)
             self.connection = self.engine
@@ -129,21 +135,24 @@ class SQLAlchemyHandler(DataHandler):
                 # (deadlock), so let's fix that...
                 import psycopg2.extensions
                 self.connection.raw_connection().set_isolation_level(
-                        psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+                    psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
             ################################################
 
-        Session = scoped_session(sessionmaker(autoflush=True, bind=self.engine))
+        # create a configured "Session" class
+        Session = sessionmaker(bind=self.connection)
+
+        # create a Session
         self.session = Session()
 
         self.env = TableEnv(*[self.obj.__module__] + self.options.env)
 
     def add_fixture_set(self, fset):
         t = self.env[fset.obj.table]
-        self.template.add_import("from %s import %s" % (
-                                        t['module'].__name__, t['name']))
+        self.template.add_import("from %s import %s" % (t['module'].__name__,
+                                                        t['name']))
 
-    def begin(self, *a,**kw):
-        DataHandler.begin(self, *a,**kw)
+    def begin(self, *a, **kw):
+        DataHandler.begin(self, *a, **kw)
 
     def commit(self):
         pass
@@ -183,56 +192,52 @@ class SQLAlchemyHandler(DataHandler):
 
         for row in self.rs:
             yield SQLAlchemyFixtureSet(row, self.obj, self.connection, self.env,
-                                            adapter=self.RecordSetAdapter)
+                                       adapter=self.RecordSetAdapter)
+
+
+def obj_lookup_table(obj):
+    from sqlalchemy.orm.mapper import class_mapper
+    mapper = class_mapper(obj)
+
+    if obj.__table__ is not None:
+        table = obj.__table__
+    elif mapper.local_table:
+        table = mapper.local_table
+    elif mapper.select_table:
+        table = mapper.select_table
+    else:
+        raise LookupError("not sure how to get a table "
+                          "from mapper %s" % mapper)
+    return table
+
 
 class SQLAlchemyMappedClassBase(SQLAlchemyHandler):
+
     class RecordSetAdapter(SQLAlchemyHandler.RecordSetAdapter):
         def __init__(self, obj):
-            self.columns = obj.__table__.columns
-
-            # could grab this from the Handler :
-            from sqlalchemy.orm import object_mapper
-            self.mapper = object_mapper(obj())
-
-            if self.mapper.local_table is not None:
-                self.table = self.mapper.local_table
-            elif self.mapper.select_table:
-                self.table = self.mapper.select_table
-            else:
-                raise LookupError(
-                    "not sure how to get a table from mapper %s" %
-                                                        self.mapper)
-
+            self.table = obj_lookup_table(obj)
+            self.columns = self.table.c
             self.id_attr = self.table.primary_key.columns.keys()
 
         def primary_key_from_instance(self, data):
-            return self.mapper.primary_key_from_instance(data)
+            return tuple(getattr(data, primary_key.name)
+                         for primary_key in self.table.primary_key)
 
     def __init__(self, *args, **kw):
         super(SQLAlchemyMappedClassBase, self).__init__(*args, **kw)
-
-        from sqlalchemy.orm.mapper import class_mapper
-        self.mapper = class_mapper(self.obj)
-
-        if self.mapper.local_table is not None:
-            self.table = self.mapper.local_table
-        elif self.mapper.select_table:
-            self.table = self.mapper.select_table
-        else:
-            raise LookupError(
-                "not sure how to get a table from mapper %s" %
-                                                    self.mapper)
+        self.table = obj_lookup_table(self.obj)
 
     def find(self, idval):
         q = self.session.query(self.obj)
-        primary_keys = self.table.primary_key.columns.keys() # I think this is 0.4 only
+        primary_keys = self.table.primary_key.columns.keys()  # I think this is 0.4 only
         try:
             len(idval)
         except TypeError:
             idval = [idval]
-        assert len(primary_keys) == len(idval), (
-            "length of idval did not match length of the table's primary keys (%s ! %s)" % (
-                                                                            primary_keys, idval))
+        assert len(primary_keys) == len(idval), ("length of idval did not "
+                                                 "match length of the table's "
+                                                 "primary keys (%s ! %s)" %
+                                                 (primary_keys, idval))
         table_cols = self.table.c
         for i, keyname in enumerate(primary_keys):
             q = q.filter(getattr(table_cols, keyname) == idval[i])
@@ -243,16 +248,18 @@ class SQLAlchemyMappedClassBase(SQLAlchemyHandler):
     def findall(self, query=None):
         """gets record set for query."""
         session = self.session
+
         if query:
-            self.rs = session.query(self.obj).filter(query)
+            self.rs = session.query(self.table).filter(query).all()
         else:
-            self.rs = session.query(self.obj)
-        if not self.rs.count():
+            self.rs = session.query(self.table).all()
+        if not self.rs:
             raise NoData("no data for query \"%s\" on %s, handler=%s" % (query, self.obj, self.__class__))
         return self.rs
 
 ## NOTE: the order that handlers are registered in is important for discovering
 ## sqlalchemy types...
+
 
 class SQLAlchemySessionMapperHandler(SQLAlchemyMappedClassBase):
     """handles a scoped session mapper
@@ -280,6 +287,7 @@ class SQLAlchemySessionMapperHandler(SQLAlchemyMappedClassBase):
 
 register_handler(SQLAlchemySessionMapperHandler)
 
+
 class SQLAlchemyTableHandler(SQLAlchemyHandler):
     class RecordSetAdapter(SQLAlchemyHandler.RecordSetAdapter):
         def __init__(self, obj):
@@ -293,7 +301,7 @@ class SQLAlchemyTableHandler(SQLAlchemyHandler):
         def primary_key_from_instance(self, data):
             key_str = []
             for k in self.table.primary_key:
-                key_str.append(str(getattr(data, k.key)))
+                key_str.append(str(getattr(data, k.key, None)))
             return "_".join(key_str)
 
     @staticmethod
@@ -312,6 +320,7 @@ class SQLAlchemyTableHandler(SQLAlchemyHandler):
         return False
 
 register_handler(SQLAlchemyTableHandler)
+
 
 class SQLAlchemyMappedClassHandler(SQLAlchemyMappedClassBase):
 
@@ -345,7 +354,8 @@ class SQLAlchemyFixtureSet(FixtureSet):
             self.obj = adapter(obj)
         else:
             self.obj = obj
-        ## do we add table objects?  elixir Entity classes get the Entity.table attribute
+        ## do we add table objects?  elixir Entity classes get the
+        ## Entity.table attribute
         # if self.obj.table not in self.env:
         #     self.env.add_table(self.obj.table)
         self.primary_key = None
@@ -377,18 +387,19 @@ class SQLAlchemyFixtureSet(FixtureSet):
             return None
 
         if foreign_key:
-            from sqlalchemy.ext.assignmapper import assign_mapper
-            from sqlalchemy.ext.sqlsoup import class_for_table
-
             table = foreign_key.column.table
-            stmt = table.select(getattr(table.c, foreign_key.column.key)==value)
+            stmt = table.select(getattr(table.c,
+                                        foreign_key.column.key) == value)
             rs = self.connection.execute(stmt)
+
+            fk_value = rs.fetchone()
+            if fk_value is None:
+                return None
 
             # adapter is always table adapter here, since that's
             # how we obtain foreign keys...
-            subset = SQLAlchemyFixtureSet(
-                        rs.fetchone(), table, self.connection, self.env,
-                        adapter=SQLAlchemyTableHandler.RecordSetAdapter)
+            subset = SQLAlchemyFixtureSet(fk_value, table, self.connection,
+                                          self.env, adapter=SQLAlchemyTableHandler.RecordSetAdapter)
             return subset
 
         return value
