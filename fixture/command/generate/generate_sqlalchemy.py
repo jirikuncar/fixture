@@ -399,4 +399,7 @@ class SQLAlchemyFixtureSet(FixtureSet):
     def set_id(self):
         """returns id of this set (the primary key value)."""
         compid = self.obj.primary_key_from_instance(self.data)
-        return "_".join([str(i) for i in compid])
+        if isinstance(compid, tuple):
+            return "_".join([str(i) for i in compid])
+        else:
+            return str(compid)
