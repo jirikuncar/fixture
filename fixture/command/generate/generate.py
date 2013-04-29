@@ -148,6 +148,14 @@ class DataSetGenerator(object):
     def code(self):
         """builds and returns code string.
         """
+        import collections
+
+        def get_key(key):
+            try:
+                return int(key)
+            except ValueError:
+                return key
+
         tpl = {'fxt_type': self.handler.fxt_type()}
 
         code = [self.template.header(self.handler)]
@@ -159,7 +167,7 @@ class DataSetGenerator(object):
             tpl['fxt_class'] = self.handler.mk_class_name(kls)
 
             val_dict = self.cache.registry[kls]
-            for k, fset in val_dict.items():
+            for k, fset in collections.OrderedDict(sorted(val_dict.items(), key=lambda t: get_key(t[0]))).items():
                 key = fset.mk_key()
                 data = self.handler.resolve_data_dict(datadef, fset)
                 tpl['data'].append((key, self.template.dict(data)))
