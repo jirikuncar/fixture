@@ -1,4 +1,4 @@
-
+import re
 import sys
 import inspect
 from fixture import SQLAlchemyFixture
@@ -9,6 +9,8 @@ try:
     import sqlalchemy
 except ImportError:
     sqlalchemy = False
+
+classsafe = re.compile('[\W_]+')
 
 
 class TableEnv(object):
@@ -161,6 +163,7 @@ class SQLAlchemyHandler(DataHandler):
             self.rs = session.query(self.obj).filter(query)
         else:
             self.rs = session.query(self.obj).all()
+
         if not self.rs.count():
             raise NoData("no data for query \"%s\" on %s, handler=%s" % (query, self.obj, self.__class__))
         return self.rs
@@ -332,7 +335,6 @@ class SQLAlchemyMappedClassHandler(SQLAlchemyMappedClassBase):
 
 register_handler(SQLAlchemyMappedClassHandler)
 
-
 class SQLAlchemyFixtureSet(FixtureSet):
     """a fixture set for a sqlalchemy record set."""
 
@@ -353,6 +355,7 @@ class SQLAlchemyFixtureSet(FixtureSet):
         self.data_dict = {}
         for col in self.obj.columns:
             sendkw = {}
+
             for fk in col.foreign_keys:
                 sendkw['foreign_key'] = fk
 
@@ -379,6 +382,7 @@ class SQLAlchemyFixtureSet(FixtureSet):
             rs = self.connection.execute(stmt)
 
             fk_value = rs.fetchone()
+            print stmt, value, colname, fk_value, self.data
             if fk_value is None:
                 return None
 
@@ -400,6 +404,6 @@ class SQLAlchemyFixtureSet(FixtureSet):
         """returns id of this set (the primary key value)."""
         compid = self.obj.primary_key_from_instance(self.data)
         if isinstance(compid, tuple):
-            return "_".join([str(i) for i in compid])
+            return "_".join([classsafe.sub('', str(i)) for i in compid])
         else:
-            return str(compid)
+            return classsafe.sub('', str(compid))
