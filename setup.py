@@ -27,38 +27,39 @@ description, long_description = get_module_meta(
     os.path.join('fixture', '__init__.py'))
 
 setup(
-    name = 'fixture',
-    version = version,
-    author = 'Kumar McMillan',
-    author_email = 'kumar dot mcmillan / gmail.com',
-    description = description,
-    classifiers = [ 'Environment :: Other Environment',
-                    'Intended Audience :: Developers',
-                    (   'License :: OSI Approved :: GNU Library or Lesser '
-                        'General Public License (LGPL)'),
-                    'Natural Language :: English',
-                    'Operating System :: OS Independent',
-                    'Programming Language :: Python',
-                    'Topic :: Software Development :: Testing',
-                    'Topic :: Software Development :: Quality Assurance',
-                    'Topic :: Utilities'],
-    long_description = long_description,
-    license = 'GNU Lesser General Public License (LGPL)',
-    keywords = ('test testing tools unittest fixtures setup teardown '
-                'database stubs IO tempfile'),
-    url = 'http://farmdev.com/projects/fixture/',
+    name='fixture',
+    version=version,
+    author='Kumar McMillan',
+    author_email='kumar dot mcmillan / gmail.com',
+    description=description,
+    classifiers=[ 'Environment :: Other Environment',
+                  'Intended Audience :: Developers',
+                  ('License :: OSI Approved :: GNU Library or Lesser '
+                   'General Public License (LGPL)'),
+                  'Natural Language :: English',
+                  'Operating System :: OS Independent',
+                  'Programming Language :: Python',
+                  'Topic :: Software Development :: Testing',
+                  'Topic :: Software Development :: Quality Assurance',
+                  'Topic :: Utilities'],
+    long_description=long_description,
+    license='GNU Lesser General Public License (LGPL)',
+    keywords=('test testing tools unittest fixtures setup teardown '
+              'database stubs IO tempfile'),
+    url='http://farmdev.com/projects/fixture/',
 
-    packages = find_packages(),
-
-    test_suite="fixture.setup_test_not_supported",
-    entry_points = {
-        'console_scripts': [ 'fixture = fixture.command.generate:main' ]
-        },
+    packages=find_packages(),
+    install_requires=['six'],
+    entry_points={
+        'console_scripts': ['fixture = fixture.command.generate:main'],
+    },
     # the following allows e.g. easy_install fixture[django]
-    extras_require = {
+    extras_require={
         'decorators': ['nose>=0.9.2'],
         'sqlalchemy': ['SQLAlchemy>=0.4'],
         'sqlobject': ['SQLObject==0.8'],
         'django': ['django'],
-        },
-    )
+    },
+    test_suite='nose.collector',
+    tests_require=['nose', 'coverage'],
+)

@@ -1,14 +1,12 @@
 
 class code_str(str):
-    """string that reproduces without quotes.
-    
-    """
+    """string that reproduces without quotes."""
     def __repr__(self):
         return str.__repr__(self)[1:-1]
 
-import generate
-from generate import *
+from . import generate
 __doc__ = generate.__doc__
+from .generate import *
 
 # load modules so they can register themselves (better way?)
 try:

@@ -1,4 +1,3 @@
-
 """Representations of Data
 
 The main class you will work with is :class:`DataSet` but there are a
@@ -319,9 +318,9 @@ class DataSetStore(list):
         try:
             return self[ self._ds_key_map[key] ]
         except (IndexError, KeyError):
-            etype, val, tb = sys.exc_info()
+            etype, val, _ = sys.exc_info()
             raise etype("row '%s' hasn't been loaded for %s (loaded: %s)" % (
-                                        key, self.dataset, self)), None, tb
+                key, self.dataset, self))
 
     def store(self, key, obj):
         self.append(obj)

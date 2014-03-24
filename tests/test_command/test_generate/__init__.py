@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 import sys
 import os
 from nose.tools import eq_
@@ -63,7 +65,7 @@ class GenerateTest(object):
             data = self.load_env(self.env)
             self.assert_data_loaded(data)
         except:
-            print code
+            print(code)
             raise
 
     def test_query(self):

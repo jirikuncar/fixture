@@ -58,8 +58,7 @@ class ObjRegistry:
         try:
             return self.registry[self.id(obj)]
         except KeyError:
-            etype, val, tb = sys.exc_info()
-            raise KeyError("object %s is not in registry" % obj), None, tb
+            raise KeyError("object %s is not in registry" % obj)
 
     def __contains__(self, object):
         return self.has(object)

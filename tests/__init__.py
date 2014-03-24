@@ -4,25 +4,17 @@
 There are several things to build before you can run the tests.
 Hopefully this will be simplified in the future but for now, do this:
 
-Create the buildout::
+Install everything ::
 
-    $ python2.5 setup_test_buildout.py
-
-Check out the trunk of Django (until 1.1 is released) into a src dir for buildout ::
-
-    $ svn co http://code.djangoproject.com/svn/django/trunk/ src/django
-
-Build everything ::
-
-    $ ./bin/buildout
+    $ pip install .[django]
 
 Run syncdb on the Django test DB and create a superuser ::
 
-    $ ./bin/manage syncdb
+    $ manage syncdb
 
 Run the tests ::
 
-    $ ./bin/test-fixture
+    $ python setup.py test
 
 Environment Variables
 ---------------------
@@ -47,12 +39,14 @@ The test suite is affected by several environment variables:
 
 As a shortcut, you can run this to set these variables in your shell ::
 
-    $ source fixture/test/profile/full.sh
+    $ source tests/profile/full.sh
 
 """
 
-import unittest, nose, os
-from fixture.test import conf
+import nose
+import os
+import unittest
+from . import conf
 
 def setup():
     # super hack:
@@ -77,8 +71,8 @@ def teardown_examples():
 class PrudentTestResult(unittest.TestResult):
     """A test result that raises an exception immediately"""
     def _raise_err(self, err):
-        exctype, value, tb = err
-        raise Exception("%s: %s" % (exctype, value)), None, tb
+        exctype, value, _ = err
+        raise Exception("%s: %s" % (exctype, value))
 
     def addFailure(self, test, err):
         self._raise_err(err)
@@ -110,6 +104,3 @@ def attr(**kwargs):
         func.__dict__.update(kwargs)
         return func
     return wrap
-
-
-

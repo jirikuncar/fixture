@@ -4,7 +4,9 @@
 The more useful bits are in :mod:`fixture.loadable`
 
 """
-import sys, traceback
+import inspect
+import sys
+import traceback
 try:
     from functools import wraps
 except ImportError:
@@ -19,13 +21,10 @@ except ImportError:
         return wrap_with_f
 
 from fixture.dataset import SuperSet
-from compiler.consts import CO_GENERATOR
 
 def is_generator(func):
-    try:
-        return func.func_code.co_flags & CO_GENERATOR != 0
-    except AttributeError:
-        return False
+    return inspect.isgeneratorfunction(func)
+
 
 class FixtureData(object):
     """
@@ -166,7 +165,7 @@ class Fixture(object):
                         sys.stderr.write("\n\n%s\n" % t_ident)
                         traceback.print_exc()
                         sys.stderr.write("%s\n\n" % t_ident)
-                    raise exc, None, tb
+                    raise exc
                 else:
                     teardown_data(data)
 
@@ -199,7 +198,7 @@ class Fixture(object):
                                 sys.stderr.write("\n\n%s\n" % t_ident)
                                 traceback.print_exc()
                                 sys.stderr.write("%s\n\n" % t_ident)
-                            raise exc, None, tb
+                            raise exc
                         else:
                             teardown_data(data)
 

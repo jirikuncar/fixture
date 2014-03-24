@@ -1,6 +1,9 @@
 # -*- coding: latin_1 -*-
 
+from __future__ import absolute_import
+
 import os
+import six
 from nose.tools import eq_
 from os.path import join, exists, isdir, basename
 from os import path
@@ -8,7 +11,7 @@ from copy import copy
 from nose.tools import eq_, raises
 from fixture import TempIO
 from fixture.io import mkdirall, putfile
-from fixture.test import attr
+from . import attr
 
 french = "tu pense qu'on peut m'utiliser comme ça?"
 
@@ -177,7 +180,7 @@ class TestTempIO(object):
 
     @attr(unit=True)
     def test_putfile_mode(self):
-        self.tmp.putfile('frenchy.txt', "", 'wb')
+        self.tmp.putfile('frenchy.txt', six.b(""), 'wb')
         f = open(join(self.tmp, 'frenchy.txt'), 'rb')
         f.read()
 

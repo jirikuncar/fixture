@@ -45,9 +45,8 @@ class StorageMediumAdapter(object):
             try:
                 self.clear(obj)
             except Exception as e:
-                etype, val, tb = sys.exc_info()
-                raise UnloadError(etype, val, self.dataset,
-                                     stored_object=obj), None, tb
+                etype, val, _ = sys.exc_info()
+                raise UnloadError(etype, val, self.dataset, stored_object=obj)
 
     def save(self, row, column_vals):
         """Given a DataRow, must save it somehow.
@@ -241,8 +240,8 @@ class LoadableFixture(Fixture):
                     registered = True
 
             except Exception as e:
-                etype, val, tb = sys.exc_info()
-                raise LoadError(etype, val, ds, key=key, row=row), None, tb
+                etype, val, _ = sys.exc_info()
+                raise LoadError(etype, val, ds, key=key, row=row)
 
     def resolve_row_references(self, current_dataset, row):
         """resolve this DataRow object's referenced values.

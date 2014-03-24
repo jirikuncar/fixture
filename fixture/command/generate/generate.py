@@ -96,7 +96,7 @@ class DataSetGenerator(object):
                             obj=obj, template=self.template, **kw)
                 break
         if handler is None:
-            raise UnrecognizedObject, (
+            raise UnrecognizedObject(
                     "no handler recognizes object %s at %s (importable? %s); "
                     "tried handlers %s" %
                         (obj, object_path, (importable and "YES" or "NO"),

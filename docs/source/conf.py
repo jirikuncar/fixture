@@ -12,7 +12,7 @@
 # serve to show the default value.
 
 import sys, os
-# for doctests of Django examples to work 
+# for doctests of Django examples to work
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'fixture', 'examples', 'django_example'))
 
 # register some docutils directives
@@ -20,6 +20,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'fixture', '
 import fixture.docs
 # for version number:
 import fixture
+
 
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
@@ -50,9 +51,16 @@ copyright = '2008, Kumar McMillan'
 # other places throughout the built documents.
 #
 # The short X.Y version.
-version = fixture.__version__
+
+# Get the version string.  Cannot be done with import!
+with open(os.path.join('..', '..', 'fixture', 'version.py'), 'rt') as f:
+    version = re.search(
+        '__version__\s*=\s*"(?P<version>.*)"\n',
+        f.read()
+    ).group('version')
+
 # The full version, including alpha/beta/rc tags.
-release = fixture.__version__
+release = version
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:

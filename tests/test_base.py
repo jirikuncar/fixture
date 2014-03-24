@@ -1,10 +1,15 @@
 
-from cStringIO import StringIO
+from __future__ import absolute_import
+
+import nose.case
+import nose.loader
+import nose.tools
 import sys
-import nose.tools, nose.case, nose.loader
-from nose.tools import eq_, raises
-from fixture.test import attr, SilentTestRunner
+
+from . import attr, SilentTestRunner
 from fixture.base import Fixture
+from nose.tools import eq_, raises
+from six import StringIO
 
 mock_call_log = []
 
