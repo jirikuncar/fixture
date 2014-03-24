@@ -122,9 +122,8 @@ class LoadQueue(ObjRegistry):
         """yields a list of objects in an order suitable for unloading.
         """
         level_nums = self.tree.keys()
-        level_nums.sort()
         treelog.info("*** unload order ***")
-        for level in level_nums:
+        for level in sorted(level_nums):
             unload_queue = self.tree[level]
             verbose_obj = []
 
@@ -263,7 +262,7 @@ class LoadableFixture(Fixture):
 
         for name in row.columns():
             val = getattr(row, name)
-            if type(val) in (types.ListType, types.TupleType):
+            if type(val) in (list, tuple):
                 # i.e. categories = [python, ruby]
                 setattr(row, name, map(resolve_stored_object, val))
             elif is_rowlike(val):

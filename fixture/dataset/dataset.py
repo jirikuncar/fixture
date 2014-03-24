@@ -5,7 +5,9 @@ few variations on it: :class:`SuperSet` and :class:`MergedSuperSet`
 
 """
 
-import sys, types
+import six
+import sys
+import types
 from fixture.util import ObjRegistry
 
 class DataContainer(object):
@@ -144,7 +146,7 @@ class Ref(object):
 
 def is_row_class(attr):
     attr_type = type(attr)
-    return ((attr_type==types.ClassType or attr_type==type) and
+    return ((issubclass(attr_type, six.class_types) or attr_type==type) and
                 attr.__name__ != 'Meta' and
                 not issubclass(attr, DataContainer.Meta))
 
@@ -237,8 +239,7 @@ class DataType(type):
         new_bases = [b for b in row.__bases__]
         for base_c, base_pos in bases_to_replace:
             # this may not work if the row's base was a new-style class
-            new_base = types.ClassType(
-                            base_c.__name__, base_c.__bases__,
+            new_base = type(base_c.__name__, base_c.__bases__,
                             dict([(k, getattr(base_c, k)) for k in dir(base_c) \
                                     if not k.startswith('_') and \
                                     k not in names_to_uninherit]))
@@ -377,7 +378,7 @@ class DataSetMeta(DataContainer.Meta):
     _stored_objects = None
     _built = False
 
-class DataSet(DataContainer):
+class DataSet(six.with_metaclass(DataType, DataContainer)):
     """
     Defines data to be loaded
 
@@ -428,7 +429,6 @@ class DataSet(DataContainer):
     See :ref:`Using Dataset <using-dataset>` for more examples of usage.
 
     """
-    __metaclass__ = DataType
     _reserved_attr = DataContainer._reserved_attr + ('data', 'shared_instance')
     ref = None
     Meta = DataSetMeta
@@ -553,7 +553,7 @@ class DataSet(DataContainer):
                 if isinstance(col_val, Ref):
                     # the .ref attribute
                     continue
-                elif type(col_val) in (types.ListType, types.TupleType):
+                elif type(col_val) in (list, tuple):
                     for c in col_val:
                         if is_rowlike(c):
                             add_ref_from_rowlike(c)
@@ -561,8 +561,8 @@ class DataSet(DataContainer):
                         # could definitely break any other storage mediums
                         # ListProperty supports quite a few more types than these
                         # see appengine.ext.db._ALLOWED_PROPERTY_TYPES
-                        elif type(c) in (types.StringType, types.UnicodeType, types.BooleanType,
-                                         types.FloatType, types.IntType):
+                        elif type(c) in six.string_types + six.integer_types + (
+                                bool, float):
                              continue
                         else:
                             raise TypeError(

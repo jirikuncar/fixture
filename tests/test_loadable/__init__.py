@@ -1,2 +1,2 @@
-
-from test_loadable import *
+from __future__ import absolute_import
+from .test_loadable import *

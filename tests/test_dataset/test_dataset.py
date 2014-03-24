@@ -3,7 +3,7 @@ from nose.tools import with_setup, eq_, raises
 from fixture import DataSet
 from fixture.dataset import (
     Ref, DataType, DataRow, SuperSet, MergedSuperSet, is_rowlike)
-from fixture.test import attr
+from .. import attr
 
 class Books(DataSet):
     def data(self):

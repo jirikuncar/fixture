@@ -1,9 +1,9 @@
 
 import sys
 from nose.tools import eq_, raises, with_setup
-from fixture.test import attr
+from ... import attr
 from fixture.command.generate import *
-    
+
 class Stranger(object):
     """something that cannot produce data."""
     pass
@@ -19,7 +19,7 @@ class MyHandler(DataHandler):
     def recognizes(obj_path, obj=None):
         if obj_path == "myhandler.object_path":
             return True
-                
+
 def register_myhandler():
     register_handler(MyHandler)
 
@@ -29,19 +29,19 @@ def reset_handlers():
 
 @attr(unit=True)
 @with_setup(setup=register_myhandler, teardown=reset_handlers)
-def test_dataset_handler():    
+def test_dataset_handler():
     g = DataSetGenerator({})
     hnd = g.get_handler("myhandler.object_path")
     assert isinstance(hnd, MyHandler)
-    
-    
+
+
 @attr(unit=True)
 @raises(UnrecognizedObject)
 @with_setup(setup=register_myhandler, teardown=reset_handlers)
 def test_unrecognized_dataset_handler():
     g = DataSetGenerator({})
     hnd = g.get_handler("NOTHONG")
-    
+
 @attr(unit=True)
 def test_requires_option():
     required_idents = []
@@ -53,12 +53,12 @@ def test_requires_option():
     sys.stderr = sys.stdout
     try:
         try:
-            dataset_generator([ 'bad.object.path', 
+            dataset_generator([ 'bad.object.path',
                 '--require-egg=foo==1.0', '--require-egg=baz>=2.0b'])
         except SystemExit as e:
             pass
     finally:
-        pkg_resources.require = orig_require    
+        pkg_resources.require = orig_require
         sys.stderr = sys.__stderr__
     eq_(required_idents, ['foo==1.0', 'baz>=2.0b'])
 
@@ -72,11 +72,11 @@ class SomeClass(object):
 @attr(unit=1)
 def test_resolve_path_to_function():
     eq_(resolve_function_path("%s:some_function" % __name__), some_function)
-    
+
 @attr(unit=1)
 def test_resolve_path_to_method():
     eq_(resolve_function_path("%s:SomeClass.some_method" % __name__), SomeClass.some_method)
-    
+
 @attr(unit=1)
 def test_resolve_path_to_module():
     # Note that this is not realistic.  I think we'd always want a callable
@@ -86,4 +86,4 @@ def test_resolve_path_to_module():
 @raises(ImportError)
 def test_resolve_bad_path():
     resolve_function_path("nomoduleshouldbenamedthis.nowhere:Babu")
-    
+

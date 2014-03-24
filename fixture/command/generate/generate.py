@@ -6,7 +6,12 @@ See :ref:`Using the fixture command <using-fixture-command>` for examples.
 
 """
 
-import sys, os, optparse, inspect, pkg_resources
+import inspect
+import optparse
+import os
+import pkg_resources
+import six
+import sys
 from warnings import warn
 from fixture.command.generate.template import templates, is_template
 handler_registry = []
@@ -252,10 +257,9 @@ class HandlerType(type):
         # split camel class name into something readable?
         return self.__name__
 
-class DataHandler(object):
+class DataHandler(six.with_metaclass(HandlerType, object)):
     """handles an object that can provide fixture data.
     """
-    __metaclass__ = HandlerType
     loadable_fxt_class = None
 
     def __init__(self, object_path, options, obj=None, template=None):

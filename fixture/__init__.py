@@ -25,7 +25,7 @@ Then open ``build/html/index.html`` in your web browser.  If that fails, you can
 import logging
 import sys
 
-#from fixture.loadable import *
+from fixture.loadable import *
 from fixture.dataset import *
 from fixture.util import *
 from fixture.io import *

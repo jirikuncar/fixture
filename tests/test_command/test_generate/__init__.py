@@ -1,11 +1,11 @@
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 import sys
 import os
 from nose.tools import eq_
 from nose.exc import SkipTest
-from fixture.test import conf
+from ... import conf
 from fixture.command.generate import DataSetGenerator, dataset_generator
 
 def setup():
