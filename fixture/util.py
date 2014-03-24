@@ -11,23 +11,23 @@ __all__ = ['DataTestCase']
 class DataTestCase(object):
     """
     A mixin to use with unittest.TestCase.
-    
-    Upon setUp() the TestCase will load the DataSet classes using your Fixture, 
-    specified in class variables.  At tearDown(), all loaded data will be 
-    removed.  During your test, you will have ``self.data``, a SuperSet instance 
+
+    Upon setUp() the TestCase will load the DataSet classes using your Fixture,
+    specified in class variables.  At tearDown(), all loaded data will be
+    removed.  During your test, you will have ``self.data``, a SuperSet instance
     to reference loaded data
-    
+
     Class Attributes:
-    
+
     ``fixture``
         the :class:`Fixture <fixture.base.Fixture>` instance to load :class:`DataSet <fixture.dataset.DataSet>` classes with
-    
+
     ``datasets``
         A list of :class:`DataSet <fixture.dataset.DataSet>` classes to load
-    
+
     ``data``
         ``self.data``, a :class:`Fixture.Data <fixture.base.FixtureData>` instance populated for you after ``setUp()``
-    
+
     """
     fixture = None
     data = None
@@ -39,37 +39,37 @@ class DataTestCase(object):
             raise ValueError("there are no datasets to load")
         self.data = self.fixture.data(*self.datasets)
         self.data.setup()
-    
+
     def tearDown(self):
         self.data.teardown()
 
 class ObjRegistry:
     """registers objects by class.
-    
+
     all lookup methods expect to get either an instance or a class type.
     """
     def __init__(self):
         self.registry = {}
-    
+
     def __repr__(self):
         return repr(self.registry)
-    
+
     def __getitem__(self, obj):
         try:
             return self.registry[self.id(obj)]
         except KeyError:
             etype, val, tb = sys.exc_info()
             raise KeyError("object %s is not in registry" % obj), None, tb
-    
+
     def __contains__(self, object):
         return self.has(object)
-    
+
     def clear(self):
         self.registry = {}
-    
+
     def has(self, object):
         return self.id(object) in self.registry
-    
+
     def id(self, object):
         if hasattr(object, '__class__'):
             if issubclass(object.__class__, type):
@@ -86,7 +86,7 @@ class ObjRegistry:
                     "cannot identify object %s because it isn't an "
                     "instance or a class" % object)
         return id(cls)
-    
+
     def register(self, object):
         id = self.id(object)
         self.registry[id] = object
@@ -94,14 +94,14 @@ class ObjRegistry:
 
 def with_debug(*channels, **kw):
     """
-    A `nose`_ decorator calls :func:`start_debug` / :func:`start_debug` before and after the 
+    A `nose`_ decorator calls :func:`start_debug` / :func:`start_debug` before and after the
     decorated method.
-    
-    All positional arguments are considered channels that should be debugged.  
+
+    All positional arguments are considered channels that should be debugged.
     Keyword arguments are passed to :func:`start_debug`
-    
+
     .. _nose: http://somethingaboutorange.com/mrl/projects/nose/
-    
+
     """
     from nose.tools import with_setup
     def setup():
@@ -117,13 +117,13 @@ def reset_log_level(level=logging.CRITICAL, channels=(
                                             "fixture.loadable.tree")):
     """
     Resets the level on all fixture logs.
-    
-    You may need to call this when other applications 
+
+    You may need to call this when other applications
     reset the root logger's log level.
-    
+
     Calling this with no args sets all logs to logging.CRITICAL
     which should keep them quiet
-    
+
     Added in version 1.1
     """
     for ch in channels:
@@ -132,46 +132,46 @@ def reset_log_level(level=logging.CRITICAL, channels=(
 def start_debug(channel, stream=sys.stdout, handler=None, level=logging.DEBUG):
     """
     A shortcut to start logging a channel to a stream.
-    
+
     For example::
-    
+
         >>> from fixture.util import start_debug, stop_debug
         >>> start_debug("fixture.loadable")
-    
-    starts logging messages from the fixture.loadable channel to the stream.  
+
+    starts logging messages from the fixture.loadable channel to the stream.
     Then... ::
-    
+
         >>> stop_debug("fixture.loadable")
-    
+
     ...turns it off.
-    
+
     Available Channels:
-    
+
     ``fixture.loadable``
         logs LOAD and CLEAR messages, referring to dataset actions
-    
+
     ``fixture.loadable.tree``
         logs a tree view of datasets loaded by datasets (recursion)
-    
-        
+
+
     Keyword Arguments:
-    
+
     ``stream``
         stream to create a loggin.StreamHandler with.  defaults to stdout.
-    
+
     ``handler``
         a preconfigured handler to add to the log
-    
+
     ``level``
         a logging level to set, default is logging.DEBUG
-    
-    
-    .. note:: 
-        Other applications might add a handler to the root logger, 
-        in which case you can't turn off debug output without messing 
+
+
+    .. note::
+        Other applications might add a handler to the root logger,
+        in which case you can't turn off debug output without messing
         with the root logger.
-    
-    
+
+
     """
     log = logging.getLogger(channel)
     if not handler:
@@ -192,7 +192,7 @@ class _dummy_stream(object):
 
 def _mklog(channel, default_level=logging.CRITICAL, default_stream=None):
     """
-    returns a log object that does nothing until something 
+    returns a log object that does nothing until something
     calls start_debug()
     """
     log = logging.getLogger(channel)
@@ -212,4 +212,4 @@ except NameError:
                 return True
         return False
 
-        
+

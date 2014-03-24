@@ -176,7 +176,7 @@ class DjangoFixture(DBLoadableFixture):
         from django.db import transaction
         try:
             self.transaction.leave_transaction_management()
-        except transaction.TransactionManagementError, e:
+        except transaction.TransactionManagementError as  e:
             raise
 
     def attach_storage_medium(self, ds):

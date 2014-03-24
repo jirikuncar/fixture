@@ -19,14 +19,14 @@ def test_mkdirall():
     try:
         mkdirall(join(tmp, 'blah/blah/'))
         assert exists(join(tmp, 'blah/blah'))
-        
+
         # relative too ...
         os.chdir(tmp)
         mkdirall('ici/ou/la')
         assert exists('ici')
         assert exists('ici/ou')
         assert exists('ici/ou/la')
-        
+
     finally:
         del tmp
         os.chdir(cwd)
@@ -36,34 +36,34 @@ def test_putfile():
     tmp = TempIO()
     cwd = os.getcwd()
     try:
-    
+
         fname = join(tmp, 'french.txt')
         putfile(fname, french)
-    
+
         assert exists(fname)
-    
+
         f = open(fname, 'r')
         contents = f.read()
         f.close()
         assert contents == french
-        
+
         # can make lazy dirs ..
         fname = join(tmp, 'ou/est/tu/frenchy.txt')
         putfile(fname, "")
         assert exists(fname)
-        
+
         # relative :
         os.chdir(tmp)
         putfile('bahh', '')
         assert exists(join(tmp, 'bahh'))
-        
+
     finally:
         del tmp
         os.chdir(cwd)
 
 @attr(unit=True)
 def test_del_self_destructs():
-    """asserts that a module level reference self destructs 
+    """asserts that a module level reference self destructs
     without exception."""
     global _TMP
     _TMP = TempIO()
@@ -71,11 +71,11 @@ def test_del_self_destructs():
 class TestTempIO(object):
     def setUp(self):
         self.tmp = TempIO()
-    
+
     def tearDown(self):
         if hasattr(self, 'tmp'):
             del self.tmp
-    
+
     @attr(unit=True)
     def test_deferred(self):
         tmp = TempIO(deferred=True)
@@ -83,7 +83,7 @@ class TestTempIO(object):
         assert exists(root)
         del tmp
         assert exists(root)
-    
+
         tmp2 = TempIO(deferred=False)
         root = str(tmp2)
         assert exists(root)
@@ -118,25 +118,25 @@ class TestTempIO(object):
         assert exists(self.tmp.rick_james)
         assert self.tmp.rick_james.startswith(self.tmp)
         assert self.tmp.rick_james.endswith("rick_james")
-        
+
         self.tmp.rick_james = "rick james"
         assert exists(self.tmp.rick_james)
         assert self.tmp.rick_james.startswith(self.tmp)
         assert self.tmp.rick_james.endswith("rick james")
-        
+
         self.tmp.rick_james = "rick_james/i/love/you"
         assert exists(self.tmp.rick_james)
         assert self.tmp.rick_james.startswith(self.tmp)
         assert self.tmp.rick_james.endswith("rick_james/i/love/you")
-    
+
     @attr(unit=True)
     def test_path_interface(self):
         self.tmp.dupes = "processed/dupes"
         def endswith(p, end):
             assert p.endswith(end), "%s did not end in %s" % (p,end)
-        
+
         eq_(self.tmp.dupes, path.join(self.tmp, "processed/dupes"))
-        eq_(self.tmp.dupes.abspath(), 
+        eq_(self.tmp.dupes.abspath(),
                 path.abspath(path.join(self.tmp, "processed/dupes")))
         eq_(self.tmp.dupes.basename(), "dupes")
         eq_(self.tmp.dupes.dirname(), path.join(self.tmp, "processed"))
@@ -145,15 +145,15 @@ class TestTempIO(object):
         eq_(self.tmp.dupes.join("foo", "bar"), path.abspath(path.join(
                                     self.tmp, "processed/dupes/foo/bar")))
         eq_(self.tmp.dupes.join("foo", "bar").exists(), False)
-        
+
         self.tmp.dupes.more = "foo/bar"
         eq_(path.exists(path.join(self.tmp.dupes, "foo", "bar")), True)
         eq_(self.tmp.dupes.join("foo", "bar").exists(), True)
-        
-        eq_(self.tmp.dupes.realpath(), 
+
+        eq_(self.tmp.dupes.realpath(),
                 path.realpath(path.join(self.tmp, "processed/dupes")))
         eq_(self.tmp.dupes.splitpath(), path.split(self.tmp.dupes))
-        eq_(self.tmp.dupes.splitext(), (path.realpath(path.join(self.tmp, 
+        eq_(self.tmp.dupes.splitext(), (path.realpath(path.join(self.tmp,
                                                     "processed/dupes")), ""))
 
     @attr(unit=True)
@@ -170,17 +170,17 @@ class TestTempIO(object):
 
         # check laziness of putfile's mkdir'ing :
         self.tmp.putfile('petite/grenouille/ribbit/frenchy.txt', french)
-        assert exists(join(self.tmp, 
+        assert exists(join(self.tmp,
                             'petite/grenouille/ribbit/frenchy.txt'))
         # make sure that a second call will only create directories necessary:
         self.tmp.putfile('petite/grenouille/ribbit/foo.txt', "foo")
-        
+
     @attr(unit=True)
     def test_putfile_mode(self):
         self.tmp.putfile('frenchy.txt', "", 'wb')
         f = open(join(self.tmp, 'frenchy.txt'), 'rb')
         f.read()
-    
+
     @attr(unit=True)
     @raises(TypeError)
     def test_putfile_accepts_only_relative_paths(self):
@@ -195,4 +195,4 @@ class TestTempIO(object):
     @attr(unit=True)
     def test_root(self):
         assert isdir(self.tmp)
-    
+

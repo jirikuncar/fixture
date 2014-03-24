@@ -1,47 +1,30 @@
-
-import sys, os
+import ast
 import ez_setup
 ez_setup.use_setuptools()
-from setuptools import setup, find_packages
-import compiler
+import os
+import re
 import pydoc
-from compiler import visitor
+import sys
 
-class ModuleVisitor(object):
-    def __init__(self):
-        self.mod_doc = None
-        self.mod_version = None
-        
-    def default(self, node):
-        for child in node.getChildNodes():
-            self.visit(child)
-            
-    def visitModule(self, node):
-        self.mod_doc = node.doc
-        self.default(node)
-        
-    def visitAssign(self, node):
-        if self.mod_version:
-            return
-        asn = node.nodes[0]
-        assert asn.name == '__version__', (
-            "expected __version__ node: %s" % asn)
-        self.mod_version = node.expr.value
-        self.default(node)
-        
-def get_module_meta(modfile):            
-    ast = compiler.parseFile(modfile)
-    modnode = ModuleVisitor()
-    visitor.walk(ast, modnode)
-    if modnode.mod_doc is None:
+from setuptools import setup, find_packages
+
+# Get the version string.  Cannot be done with import!
+with open(os.path.join('fixture', 'version.py'), 'rt') as f:
+    version = re.search(
+        '__version__\s*=\s*"(?P<version>.*)"\n',
+        f.read()
+    ).group('version')
+
+def get_module_meta(modfile):
+    with open(modfile) as f:
+        doc = ast.get_docstring(ast.parse(f.read()))
+    if doc is None:
         raise RuntimeError(
             "could not parse doc string from %s" % modfile)
-    if modnode.mod_version is None:
-        raise RuntimeError(
-            "could not parse __version__ from %s" % modfile)
-    return (modnode.mod_version,) + pydoc.splitdoc(modnode.mod_doc)
+    return pydoc.splitdoc(doc)
 
-version, description, long_description = get_module_meta("./fixture/__init__.py")
+description, long_description = get_module_meta(
+    os.path.join('fixture', '__init__.py'))
 
 setup(
     name = 'fixture',
@@ -64,12 +47,12 @@ setup(
     keywords = ('test testing tools unittest fixtures setup teardown '
                 'database stubs IO tempfile'),
     url = 'http://farmdev.com/projects/fixture/',
-    
+
     packages = find_packages(),
-    
+
     test_suite="fixture.setup_test_not_supported",
-    entry_points = { 
-        'console_scripts': [ 'fixture = fixture.command.generate:main' ] 
+    entry_points = {
+        'console_scripts': [ 'fixture = fixture.command.generate:main' ]
         },
     # the following allows e.g. easy_install fixture[django]
     extras_require = {
