@@ -95,7 +95,7 @@ def test_negotiated_medium():
 
     clear_mappers()
     ScopedSession = scoped_session(get_transactional_session())
-    ScopedSession.mapper(Category, categories)
+    mapper(Category, categories)
 
     eq_(type(negotiated_medium(Category, CategoryData)), MappedClassMedium)
     eq_(is_mapped_class(Category), True)

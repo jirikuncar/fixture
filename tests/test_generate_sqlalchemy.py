@@ -87,8 +87,8 @@ class TestHandlerRecognition(object):
     def test_recognizes_session_mapper(self):
         from sqlalchemy.orm import mapper, sessionmaker, scoped_session
 
-        ScopedSession = scoped_session(sessionmaker(autoflush=False, transactional=False))
-        ScopedSession.mapper(MappableObject, categories)
+        ScopedSession = scoped_session(sessionmaker(autoflush=False))
+        mapper(MappableObject, categories)
 
         hnd = self.generator.get_handler(
                 "%s.MappableObject" % (MappableObject.__module__),
@@ -218,13 +218,13 @@ class TestQuerySessionMappedClass(HandlerQueryTest):
         self.options = options
         self.generator = DataSetGenerator(self.options, template=StubTemplate())
 
-        ScopedSession = scoped_session(sessionmaker(autoflush=False, transactional=True))
+        ScopedSession = scoped_session(sessionmaker(autoflush=False))
 
-        ScopedSession.mapper(Category, categories, save_on_init=False)
-        ScopedSession.mapper(Product, products, properties={
+        mapper(Category, categories, save_on_init=False)
+        mapper(Product, products, properties={
             'category': relation(Category),
         }, save_on_init=False)
-        ScopedSession.mapper(Offer, offers, properties={
+        mapper(Offer, offers, properties={
             'category': relation(Category, backref='products'),
             'product': relation(Product)
         }, save_on_init=False)
@@ -266,10 +266,10 @@ class TestSQLAlchemyGenerate(UsingFixtureTemplate, GenerateTest):
         clear_mappers()
 
         realmeta = MetaData(bind=create_engine(conf.HEAVY_DSN))
-        RealSession = scoped_session(sessionmaker(autoflush=False, transactional=False, bind=realmeta.bind))
+        RealSession = scoped_session(sessionmaker(autoflush=False, bind=realmeta.bind))
 
         memmeta = MetaData(bind=create_engine(conf.LITE_DSN))
-        MemSession = scoped_session(sessionmaker(autoflush=True, transactional=False, bind=memmeta.bind))
+        MemSession = scoped_session(sessionmaker(autoflush=True, bind=memmeta.bind))
 
         self.setup_mappers()
 
@@ -282,11 +282,11 @@ class TestSQLAlchemyGenerate(UsingFixtureTemplate, GenerateTest):
 
         parkas = Category()
         parkas.name = "parkas"
-        session.save(parkas)
+        session.add(parkas)
         jersey = Product()
         jersey.name = "jersey"
         jersey.category = parkas
-        session.save(jersey)
+        session.add(jersey)
 
         rebates = Category()
         rebates.name = "rebates"
@@ -295,8 +295,8 @@ class TestSQLAlchemyGenerate(UsingFixtureTemplate, GenerateTest):
         super_cashback.name = "super cash back!"
         super_cashback.product = jersey
         super_cashback.category = rebates
-        session.save(super_cashback)
-        session.save(rebates)
+        session.add(super_cashback)
+        session.add(rebates)
 
         session.flush()
 

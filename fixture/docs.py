@@ -188,7 +188,7 @@ def setup_command_data():
     metadata.create_all()
     orm.mapper(Book, books)
     orm.mapper(Author, authors, properties={'books': orm.relation(Book, backref='author')})
-    Session = orm.sessionmaker(bind=metadata.bind, autoflush=True, transactional=True)
+    Session = orm.sessionmaker(bind=metadata.bind, autoflush=True)
     session = Session()
 
     frank = Author()

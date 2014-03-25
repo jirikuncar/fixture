@@ -158,7 +158,7 @@ Fixture is designed for applications that already have a way to store data; the 
     >>> engine = create_engine('sqlite:////tmp/fixture_example.db')
     >>> metadata = MetaData()
     >>> metadata.bind = engine
-    >>> Session = scoped_session(sessionmaker(bind=metadata.bind, autoflush=True, transactional=True))
+    >>> Session = scoped_session(sessionmaker(bind=metadata.bind, autoflush=True))
     >>> session = Session()
 
 Set up the table and mapper for authors ...

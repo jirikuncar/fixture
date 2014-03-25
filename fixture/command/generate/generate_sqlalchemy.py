@@ -1,5 +1,7 @@
 
-import sys, inspect
+import six
+import sys
+import inspect
 from fixture.command.generate import (
         DataHandler, register_handler, FixtureSet, NoData, UnsupportedHandler)
 from fixture import SQLAlchemyFixture
@@ -18,7 +20,7 @@ class TableEnv(object):
         self.tablemap = {}
         for obj in self.objects:
             module = None
-            if isinstance(obj, basestring):
+            if isinstance(obj, six.string_types):
                 modpath = obj
                 if modpath not in sys.modules:
                     # i.e. modpath from command-line option...
