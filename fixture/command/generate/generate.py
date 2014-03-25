@@ -110,7 +110,7 @@ class DataSetGenerator(object):
             except UnsupportedHandler as e:
                 warn("%s is unsupported (%s)" % (h, e))
                 continue
-            except Exception, e:
+            except Exception as e:
                 warn("Unknown error (%s)" % (e, ))
                 continue
             if recognizes_obj:
@@ -278,7 +278,7 @@ class HandlerType(type):
         return self.__name__
 
 
-class DataHandler(six.with_metaclass(HandlerType, object)):
+class DataHandler(six.with_metaclass(HandlerType)):
     """handles an object that can provide fixture data.
     """
     loadable_fxt_class = None
