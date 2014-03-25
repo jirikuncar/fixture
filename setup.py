@@ -64,5 +64,11 @@ setup(
         'django': ['django'],
     },
     test_suite='nose.collector',
-    tests_require=['nose', 'coverage'],
+    tests_require=[
+        'nose',
+        'coverage',
+        'sqlalchemy',
+        'sqlobject',
+        'django',
+    ],
 )

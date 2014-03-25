@@ -10,8 +10,8 @@ from fixture.command.generate import DataSetGenerator
 from fixture.command.generate.template import Template
 from fixture.command.generate.generate_sqlalchemy import *
 
-from . import GenerateTest, UsingTesttoolsTemplate, UsingFixtureTemplate
-from ... import conf, attr, env_supports
+from .generate_helper import GenerateTest, UsingTesttoolsTemplate, UsingFixtureTemplate
+from . import conf, attr, env_supports
 from fixture.examples.db import sqlalchemy_examples
 from fixture.examples.db.sqlalchemy_examples import (
     metadata, Category, Product, Offer, categories, products, offers )

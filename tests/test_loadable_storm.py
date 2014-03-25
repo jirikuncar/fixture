@@ -8,17 +8,13 @@ from fixture import (
     DataSet)
 from fixture.dataset import MergedSuperSet
 from fixture.examples.db.storm_examples import *
-from .. import conf, env_supports
-from ..test_loadable import *
-
-
-
+from . import conf, env_supports
+from .test_loadable import *
 
 from fixture.util import start_debug, stop_debug
 #start_debug("fixture.loadable")
 #start_debug("fixture.loadable.tree")
 #start_debug("fixture.loadable.storm")
-
 
 
 def setup():

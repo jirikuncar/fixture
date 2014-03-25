@@ -1,15 +1,19 @@
 from __future__ import absolute_import
+
 import os, sys
+
 from nose.tools import eq_
 from nose.exc import SkipTest
-from fixture import SQLObjectFixture
+
 from fixture import (
     SQLObjectFixture, NamedDataStyle, PaddedNameStyle, CamelAndUndersStyle,
     DataSet)
 from fixture.dataset import MergedSuperSet
 from fixture.examples.db.sqlobject_examples import *
-from .. import conf, env_supports
-from ..test_loadable import *
+
+from . import conf, env_supports
+from .test_loadable import *
+
 
 def setup():
     if not env_supports.sqlobject: raise SkipTest

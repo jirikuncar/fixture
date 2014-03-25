@@ -1,16 +1,20 @@
 from __future__ import print_function
+
 import unittest
+
 from nose.tools import eq_, raises
 from nose.exc import SkipTest
-from fixture import SQLAlchemyFixture
-from fixture.dataset import MergedSuperSet
+
 from fixture import (
     SQLAlchemyFixture, NamedDataStyle, CamelAndUndersStyle, TrimmedNameStyle)
-from fixture.exc import UninitializedError
-from .. import conf, env_supports, attr
-from ..test_loadable import *
+from fixture.dataset import MergedSuperSet
 from fixture.examples.db.sqlalchemy_examples import *
+from fixture.exc import UninitializedError
 from fixture.loadable.sqlalchemy_loadable import *
+
+from . import conf, env_supports, attr
+from .test_loadable import *
+
 
 def get_transactional_session():
     if sa_major < 0.5:

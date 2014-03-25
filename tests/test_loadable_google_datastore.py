@@ -1,12 +1,15 @@
 
-import sys
 import os
+import sys
+import unittest
+
 from nose.exc import SkipTest
 from nose.tools import eq_
-import unittest
+
 from fixture import DataSet, TempIO, GoogleDatastoreFixture
 from fixture.util import reset_log_level
-from .. import conf, attr
+
+from . import conf, attr
 
 tmp = TempIO()
 

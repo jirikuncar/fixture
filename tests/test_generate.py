@@ -1,8 +1,11 @@
 
 import sys
 from nose.tools import eq_, raises, with_setup
-from ... import attr
+
 from fixture.command.generate import *
+
+from . import attr
+
 
 class Stranger(object):
     """something that cannot produce data."""

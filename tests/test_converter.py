@@ -1,15 +1,20 @@
 
-from .. import attr
-from decimal import Decimal
 import datetime
-from fixture import DataSet
+
+from decimal import Decimal
 from nose.tools import eq_, raises
-from fixture.dataset.converter import *
+from six import StringIO
+
 try:
     import json
 except ImportError:
     import simplejson as json
-from cStringIO import StringIO
+
+from fixture import DataSet
+from fixture.dataset.converter import *
+
+from . import attr
+
 
 class FooData(DataSet):
     class bar:

@@ -3,10 +3,14 @@ from __future__ import print_function, absolute_import
 
 import sys
 import os
+
 from nose.tools import eq_
 from nose.exc import SkipTest
-from ... import conf
+
 from fixture.command.generate import DataSetGenerator, dataset_generator
+
+from . import conf
+
 
 def setup():
     # every tests needs a real db conn :

@@ -1,12 +1,16 @@
 
 import nose
+import unittest
+
 from nose.tools import raises, eq_
 from nose.exc import SkipTest
-import unittest
+
 from fixture import TempIO, DataSet, NamedDataStyle
 from fixture.loadable import (
     LoadableFixture, EnvLoadableFixture, DBLoadableFixture)
-from .. import attr, env_supports, PrudentTestResult
+
+from . import attr, env_supports, PrudentTestResult
+
 
 def exec_if_supported(code, globals={}, locals={}):
     # seems that for using from __future__ exec needs to think it's compiling a

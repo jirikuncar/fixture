@@ -6,9 +6,9 @@ from fixture import SQLObjectFixture
 from fixture.command.generate import DataSetGenerator, dataset_generator
 from fixture.dataset import MergedSuperSet
 from fixture.style import NamedDataStyle
-from . import (compile_, GenerateTest, UsingTesttoolsTemplate,
-               UsingFixtureTemplate)
-from ... import env_supports, conf
+from .generate_helper import (compile_, GenerateTest, UsingTesttoolsTemplate,
+                              UsingFixtureTemplate)
+from . import env_supports, conf
 from fixture.examples.db.sqlobject_examples import (
     Category, Product, Offer, setup_db, teardown_db)
 
