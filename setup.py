@@ -51,7 +51,10 @@ setup(
     packages=find_packages(),
     install_requires=['six'],
     entry_points={
-        'console_scripts': ['fixture = fixture.command.generate:main'],
+        'console_scripts': [
+            'fixture = fixture.command.generate:main',
+            'manage=fixture.examples.django_example.manage:main',
+        ],
     },
     # the following allows e.g. easy_install fixture[django]
     extras_require={

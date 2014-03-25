@@ -1,5 +1,5 @@
 
-from fixture.test import attr
+from .. import attr
 from decimal import Decimal
 import datetime
 from fixture import DataSet

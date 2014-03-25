@@ -2,7 +2,7 @@ from datetime import datetime
 from fixture import DjangoFixture
 from fixture.style import NamedDataStyle
 from fixture.loadable.django_loadable import field_is_required
-from fixtures import *
+from fixture import *
 from util import *
 from nose.tools import raises
 from fixture.examples.django_example.app import models
@@ -10,16 +10,16 @@ from django.db import models as django_models
 
 def _check_row(medium, column_vals):
     medium._check_schema(column_vals)
-    
+
 def test_schema_conformance():
-    
+
     valid_rels = ValidNoRelationsData()
     invalid_rels = InvalidNoRelationsData()
 
     class NoRelations(django_models.Model):
         char = django_models.CharField(max_length=10)
         num = django_models.IntegerField()
-    
+
     for dataset, model, callable in \
                 [
                     (valid_rels,  NoRelations, _check_row),
@@ -45,7 +45,7 @@ def test_is_field_required():
         nullable_date = models.DateTimeField(null=True, auto_now_add=True)
         default_date = models.DateTimeField(default=datetime.now)
 
-        
+
     required_matrix = dict(
         pk=False,
         req=True,
@@ -56,7 +56,7 @@ def test_is_field_required():
         nullable_date=False,
         default_date=False,
         )
-    
+
     def check_field_required(fld, result):
         msg = "field '%s': null=%s, primary_key=%s, auto_now=%s, auto_now_add=%s " \
               "should be %s"
@@ -66,7 +66,7 @@ def test_is_field_required():
                                                         fld.primary_key,
                                                         auto_now, auto_now_add,
                                                         result)
-    
+
     for item in required_matrix.items():
         fld, result = item
         check_field_required.description = "%s required? %s" % item
